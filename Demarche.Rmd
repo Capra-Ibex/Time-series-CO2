@@ -23,16 +23,19 @@ hawai_ts <- ts(hawai %>% dplyr::select(-time),
 
 ## Présentation du jeu de données
 Le jeu de données contient les informations de la teneur en CO$_2$ de l'air d'Hawaï.
-Les variables ne présentent pas d'unité. L'exploration rapide des chiffres semble supposer que la tenneure en CO$_2$ est en ppm et le temps en année décimale.
+Les variables ne présentent pas d'unité. L'exploration rapide des chiffres semble supposer que la tenneur en CO$_2$ est en ppm et le temps en année décimale.
+
 ```{r head, echo = F}
 kable(head(hawai, n = 4)) %>% 
   kable_styling(position="left", full_width = F)
 ```
-Dans un premier temps, les dates décimales ont été transformées en date avec l'année, le mois, le jour, l'heure, la minute et la seconde par la fonction `lubridate::date_decimal`. Dans un second temps et pour les analyses futur, les dates décimales ont été convértie au format **time series** (ts) en considérant une mesure de teneur en CO$_2$ par mois.
+
+Dans un premier temps, les dates décimales ont été transformées en date avec l'année, le mois, le jour, l'heure, la minute et la seconde par la fonction `lubridate::date_decimal`. Dans un second temps et pour les analyses future, les dates décimales ont été convérties au format **time series** (ts) en considérant une mesure de teneur en CO$_2$ par mois entre 1958 et 2001.
 
 ## Série temporelle de la variation de la teneur en CO$_2$
 
 Voici la repérsentation de la teneur en CO$_2$ à Hawaï entre 1958 et 2001 :
+
 ```{r co2, echo = FALSE}
 hawai %>% 
   mutate(Time = date_decimal(time)) %>% 
@@ -41,9 +44,11 @@ hawai %>%
   geom_line() +
   labs(x = "Année", y = expression(Concentration~en~CO[2]~(ppm))) 
 ```
-Le graohique montre une tendance à l'augmentation de la teneur en CO$_2$, probablement dûe au réchauffement climatique.\par
 
-La moyenne mensuelle de ces valeurs montre un patern récurent chaque année :
+Le graphique montre une tendance à l'augmentation de la teneur de l'air en CO$_2$, probablement dûe au réchauffement climatique.\par
+
+La moyenne mensuelle de ces valeurs montre une fluctuation récurent avec une période de l'ordre de année :
+
 ```{r co2m, echo = FALSE}
 hawai %>% 
   mutate(Time = date_decimal(time)) %>% 
@@ -60,58 +65,65 @@ hawai %>%
 Chaque année, le taux de CO$_2$ de l'air augmente pendant les six premiers mois, puis dminue pendant l'été pour finalement augmenter à nouveau le reste de l'année.
 
 ### Teste d'autocorrelation
-Le teste d'autocorrélation montre une corrélation significative entre chaque donnée et celles que la précède.
+Le test d'autocorrélation montre une corrélation significative entre chaque donnée et celles qui la précède.
+
 ```{r autoc1, echo = FALSE}
 ggAcf(hawai_ts) +
   ggtitle("")
 ```
 
 ### Tendance des mesures
-Le graphique de retardement présente des points très proches de la droite 1:1 du graphique. Cela démontre la présence d'une tendance forte dans les donnée, ici l'augmentation de la teneur en CO$_2$ de l'air.
+Le graphique de retardement présente des points très proches de la droite 1:1 du graphique. Cela démontre la présence d'une tendance forte dans les données, ici l'augmentation de la teneur en CO$_2$ de l'air.
+
 ```{r lag1, echo = FALSE}
 gglagplot(hawai_ts)
 ```
 
 ### Test de Ljung-Box
-Les résultats de ce teste statistique montrent avec une `p-value < 2.2e-16` que les données mensuelles de la teneur de l'air en CO$_2$ n'est pas un bruit blanc.
+Les résultats de ce test statistique montrent avec une `p-value < 2.2e-16` que les données mensuelles de la teneur de l'air en CO$_2$ n'est pas un bruit blanc.
+
 ```{r box1, echo = FALSE}
 Box.test(hawai_ts, lag = 27, type = "Ljung-Box")
 ```
 
 ## Variation de l'augempentation de la teneur en CO$_2$
-La teneur de l'air en CO$_2$ suit une tendance et augmente entre 1958 et 2001. Cependant, il est possible que la teneur en ce gaz fluctue au court de cette augmentation. Pour vérifier cela, il est nécessaire d'appliquer les même test que précédement sur les données dérivées.
+La teneur de l'air en CO$_2$ suit une tendance et augmente entre 1958 et 2001. Cependant, il est possible que la teneur en ce gaz fluctue au court de cette augmentation. Pour vérifier cela, il est nécessaire d'appliquer les mêmes tests que précédement sur les données dérivées.
 
 Voici la représentation de ces données :
+
 ```{r diffco2, echo = FALSE}
 autoplot(diff(hawai_ts)) +
   labs(x = "Année", y = expression(Variation~de~la~teneur~en~CO[2]~(ppm)))
 ```
 
 ### Teste d'autocorrelation
-Le teste d'autocorrélation montre une corrélation significative entre les données séparées de 18 mois avec une structure carractéristique. Nous sommes en présence d'un fluctuation saisonnière.
+Le test d'autocorrélation montre une corrélation significative entre les données séparées de 18 mois avec une structure carractéristique. Nous sommes en présence d'un fluctuation saisonnière.
+
 ```{r autoc2, echo = FALSE}
 ggAcf(diff(hawai_ts))  +
   ggtitle("")
 ```
 
 ### Tendance des mesures
-Le graphique de retardement montre à nouveau cette structure dans les données de la variation de l'augmentation en CO$_2$. La forme se répétant est circulaire, l'augmentation de la teneur en CO$_2$ est caractérisée par une fluctuation saisonnière sinosoïdale.
+Le graphique de retardement montre à nouveau cette structure dans les données de la variation de l'augmentation de la teneur en CO$_2$. La forme se répétant est circulaire, l'augmentation de la teneur en CO$_2$ est caractérisée par une fluctuation saisonnière sinosoïdale.
+
 ```{r lag2, echo = FALSE}
 gglagplot(diff(hawai_ts))
 ```
 
 ### Test de Ljung-Box
-Les résultats de ce teste statistique montrent avec une `p-value < 2.2e-16` que la variation saisonnière de la teneur de l'air en CO$_2$ n'est pas un bruit blanc.
+Les résultats de ce test statistique montrent avec une `p-value < 2.2e-16` que la variation saisonnière de la teneur de l'air en CO$_2$ n'est pas un bruit blanc.
+
 ```{r box2, echo = FALSE}
 Box.test(diff(hawai_ts), lag = 27, type = "Ljung-Box")
 ```
 
 ## Modélisation de la série temporelle
-L'analyse des seuils de significativité des tests d'autocorrélations montre que la tendance à l'augmentation de la teneur en CO$_2$ et ses fluctuations saisonnières peuvent être prédites par modélisation. 
+L'analyse des seuils de significativité des tests d'autocorrélation montre que la tendance à l'augmentation de la teneur en CO$_2$ et ses fluctuations saisonnières peuvent être prédites par modélisation. 
 
 
 ### Séparation du jeu de données entre entrainement et validation
-Pour cela, le jeu de donnée a été séparé entre une partie entrainant la modélisation (70 % du jeu de données à partir de la prmière valeur) et une partie servant à valider le modèle (30 % des dernières valeurs temporelles).
+Pour cela, le jeu de données a été séparé entre une partie entrainant la modélisation (70 % du jeu de données à partir de la prmière valeur) et une partie servant à valider le modèle (30 % des dernières valeurs temporelles).
 
 ```{r sep, echo = FALSE, results = FALSE, warning = FALSE, include = FALSE}
 lim <- round(length(hawai$time)*0.7, 0)
@@ -184,7 +196,7 @@ Le modèle s'ajustant le mieux aux données est le modèle ARMIA.
 ### Paramètres du modèle sélectionné
 
 La variation sur toute la période étudiée est décrite par les paramètres *p* le nombre de périodes précédentes prises en compte, *d* le nombre de différenciation de la série temporelle et *q* le nombre d'erreurs précédentes prises en compte. Leurs valeurs sont respectivement de 1, 1 et 1.\par
-La variation saisonnière est décrite par les paramètres P = 2, D = 1 et Q = 2 similaires aux tendance de la période mais appliqué aux variations saisonnières.
+La variation saisonnière est décrite par les paramètres P = 2, D = 1 et Q = 2 dont les métriques sont similaires à celles utilisées pour la tendance générale mais appliquées aux variations saisonnières.
 
 ### Analyse des résidus
 
@@ -194,10 +206,10 @@ shapiro.test(residuals(hawai_arima_f))
 ```
 
 La p-value du teste de Ljung-Box (0.3) montre que les résidus ne sont pas différent d'un bruit blanc, ce qui est recherché dans cette modélisation.\par
-Le graphique des autocorrélations ne montre que deux points allant au-delà du seuil de 0.05, ce qui peut être considéré comme négligeable au regard des autres points.\par
+Le graphique d'autocorrélation ne montre que deux points allant au-delà du seuil de 0.05, ce qui peut être considéré comme négligeable au regard des autres points.\par
 La distribution des résidus présente quelques valeurs aberrantes en particulier au début du jeu de données. De plus, les résidus semble suivre une loi normale alors que le résultat du teste de shapiro (p-value < 0.05) infirme. Par conséquent, les intervalles de prédiction risque d'être trop vague.
 
 ## Critiques du modèle
 
-Le modèle sélectionné semble fiable et pertinent pour prédire l'évolution de la teneur en CO$_2$ de l'air à Hawaï sur des pas de temps de quelques années. Au-delà les incertitudes du modèle sont trop importante et la teneure en CO$_2$ est sur évaluée.\par
-Ce modèle peut être amélioré en prenant en compte des paramètres environnementaux comme facteurs de fluctuation et d'évolution de la teneur en CO$_2$, e.g. température, couverture nuageuse, activités anthropiques, etc.
+Le modèle sélectionné semble fiable et pertinent pour prédire l'évolution de la teneur en CO$_2$ de l'air à Hawaï sur des pas de temps de quelques années. Au-delà les incertitudes du modèle sont trop importantes et la teneur en CO$_2$ est sur-évaluée.\par
+Ce modèle peut être amélioré en prenant en compte des paramètres environnementaux comme facteurs de fluctuation et d'évolution de la teneur en CO$_2$, e.g. température, couverture nuageuse, activités anthropiques.
